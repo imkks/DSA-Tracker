@@ -99,6 +99,40 @@ npm run build
 ```
 The output will be in the dist/ folder, ready to be hosted.
 
+This project is configured for easy deployment to GitHub Pages.
+
+Install the deployment tool:
+
+```Bash
+
+npm install gh-pages --save-dev
+```
+Update vite.config.js: Set the base path to your repository name:
+
+```JavaScript
+
+export default defineConfig({
+  plugins: [react()],
+  base: '/dsa-tracker/', // Replace with your repo name
+})
+```
+Update package.json: Add the homepage URL and deployment scripts:
+
+```JSON
+
+"homepage": "https://<username>.github.io/dsa-tracker",
+"scripts": {
+  // ... other scripts
+  "predeploy": "npm run build",
+  "deploy": "gh-pages -d dist"
+}
+```
+Deploy:
+
+```Bash
+
+npm run deploy
+```
 ## 🤝 Contributing
 1. Fork the project
 
