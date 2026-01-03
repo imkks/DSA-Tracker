@@ -1,70 +1,114 @@
-# GitHub Codespaces ♥️ React
+# 🚀 DSA Pattern Tracker
 
-Welcome to your shiny new Codespace running React! We've got everything fired up and running for you to explore React.
+A comprehensive, offline-first React application designed to help you master Data Structures and Algorithms by tracking your progress through common coding patterns (Two Pointers, Sliding Window, DP, etc.).
 
-You've got a blank canvas to work on from a git perspective as well. There's a single initial commit with the what you're seeing right now - where you go from here is up to you!
+> **Note:** This application persists all data (progress, stars, notes) to your browser's Local Storage. No backend or account creation is required.
 
-Everything you do here is contained within this one codespace. There is no repository on GitHub yet. If and when you’re ready you can click "Publish Branch" and we’ll create your repository and push up your project. If you were just exploring then and have no further need for this code then you can simply delete your codespace and it's gone forever.
+## ✨ Features
 
-This project was bootstrapped for you with [Vite](https://vitejs.dev/).
+- **Pattern-Based Organization**: Questions are grouped by logical patterns (e.g., "Fast & Slow Pointers", "Monotonic Stack") rather than random topics.
+- **Progress Tracking**: Visual progress bars for individual patterns, categories, and overall completion.
+- **Note Taking**: Add personal notes, time complexities, or trick explanations to any question. Notes are saved automatically.
+- **Review System**: Star ⭐ questions to mark them for later revision.
+- **Direct LeetCode Integration**: One-click access to the problem on LeetCode.
+- **Dark Mode**: Fully supported dark/light theme toggling.
+- **Responsive Design**: Works on desktop and mobile.
 
-## Available Scripts
+## 🛠️ Tech Stack
 
-In the project directory, you can run:
+- **Framework**: [React](https://react.dev/) (Vite)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **State Management**: React Hooks + LocalStorage
+- **Build Tool**: Vite
 
-### `npm start`
+## 🏃‍♂️ Getting Started
 
-We've already run this for you in the `Codespaces: server` terminal window below. If you need to stop the server for any reason you can just run `npm start` again to bring it back online.
+### Prerequisites
 
-Runs the app in the development mode.\
-Open [http://localhost:3000/](http://localhost:3000/) in the built-in Simple Browser (`Cmd/Ctrl + Shift + P > Simple Browser: Show`) to view your running application.
+- Node.js (v16 or higher recommended)
+- npm or yarn
 
-The page will reload automatically when you make changes.\
-You may also see any lint errors in the console.
+### Installation
 
-### `npm test`
+1. **Clone the repository** (or create the project folder):
+   ```bash
+   git clone [https://github.com/your-username/dsa-tracker.git](https://github.com/your-username/dsa-tracker.git)
+   cd dsa-tracker
+   ```
+ 2.  **Install dependencies:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+``bash
 
-### `npm run build`
+npm install
+```
+3. **Run the development server:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```Bash
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+npm run dev
+```
+4. **Open your browser: Navigate to http://localhost:5173 (or the port shown in your terminal).
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 📂 Project Structure
+```Plaintext
 
-## Learn More
+dsa-tracker/
+├── src/
+│   ├── components/
+│   │   ├── CategoryAccordion.jsx  # Collapsible Category container
+│   │   ├── PatternSection.jsx     # Sub-group for specific patterns
+│   │   ├── QuestionItem.jsx       # Individual question row + Note logic
+│   │   └── ProgressBar.jsx        # Visual progress indicator
+│   ├── data/
+│   │   └── dsaData.js             # The raw question dataset
+│   ├── utils/
+│   │   └── helpers.js             # Data parsing and ID generation
+│   ├── App.jsx                    # Main layout and State Manager
+│   └── main.jsx                   # Entry point
+└── ...config files
+```
+## ⚙️ Customization
+Adding New Questions
+The data is stored in src/data/dsaData.js. To add questions, simply append them to the existing arrays in the following format:
 
-You can learn more in the [Vite documentation](https://vitejs.dev/guide/).
+```JavaScript
 
-To learn Vitest, a Vite-native testing framework, go to [Vitest documentation](https://vitest.dev/guide/)
+["Pattern Name", [
+    "1. Two Sum", 
+    "121. Best Time to Buy and Sell Stock"
+]]
+```
+The app automatically parses the number (ID) and the title to generate the LeetCode link.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+**Resetting Data
+If you need to clear all progress:
 
-### Code Splitting
+1. Click the Reset button in the top right corner of the app.
 
-This section has moved here: [https://sambitsahoo.com/blog/vite-code-splitting-that-works.html](https://sambitsahoo.com/blog/vite-code-splitting-that-works.html)
+2. OR manually clear your browser's Local Storage.
 
-### Analyzing the Bundle Size
+## 🚢 Deployment
+Since this is a static Single Page Application (SPA), it can be deployed easily for free on platforms like Vercel or Netlify.
 
-This section has moved here: [https://github.com/btd/rollup-plugin-visualizer#rollup-plugin-visualizer](https://github.com/btd/rollup-plugin-visualizer#rollup-plugin-visualizer)
+Build for production:
 
-### Making a Progressive Web App
+```Bash
 
-This section has moved here: [https://dev.to/hamdankhan364/simplifying-progressive-web-app-pwa-development-with-vite-a-beginners-guide-38cf](https://dev.to/hamdankhan364/simplifying-progressive-web-app-pwa-development-with-vite-a-beginners-guide-38cf)
+npm run build
+```
+The output will be in the dist/ folder, ready to be hosted.
 
-### Advanced Configuration
+## 🤝 Contributing
+1. Fork the project
 
-This section has moved here: [https://vitejs.dev/guide/build.html#advanced-base-options](https://vitejs.dev/guide/build.html#advanced-base-options)
+2. Create your feature branch (git checkout -b feature/AmazingFeature)
 
-### Deployment
+3. Commit your changes (git commit -m 'Add some AmazingFeature')
 
-This section has moved here: [https://vitejs.dev/guide/build.html](https://vitejs.dev/guide/build.html)
+4. Push to the branch (git push origin feature/AmazingFeature)
 
-### Troubleshooting
+5. Open a Pull Request
 
-This section has moved here: [https://vitejs.dev/guide/troubleshooting.html](https://vitejs.dev/guide/troubleshooting.html)
+## 📄 License
+Distributed under the MIT License.
