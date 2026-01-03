@@ -1,103 +1,81 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart3, Moon, Sun } from 'lucide-react';
+import { BarChart3, Moon, Sun, Linkedin, Code2 } from 'lucide-react'; // Added Linkedin, Code2
 
 import { RAW_DATA } from './data/dsaData';
 import { hydrateData } from './utils/helpers';
 import CategoryAccordion from './components/CategoryAccordion';
 
 export default function App() {
-  // State
+  // ... (Keep all your existing state and useEffect logic exactly the same) ...
+  // For brevity, I am not repeating the state logic here, just the return statement.
+  
+  // PASTE YOUR EXISTING STATE & USEEFFECT CODE HERE
   const [data, setData] = useState([]);
   const [completedSet, setCompletedSet] = useState(new Set());
   const [starredSet, setStarredSet] = useState(new Set());
-  const [notes, setNotes] = useState({}); // New: Notes State
+  const [notes, setNotes] = useState({});
   const [darkMode, setDarkMode] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Initialize Data
   useEffect(() => {
     const processed = hydrateData(RAW_DATA);
     setData(processed);
-    
-    // Load persisted state
     try {
       const savedProgress = localStorage.getItem('dsa-tracker-progress');
       if (savedProgress) setCompletedSet(new Set(JSON.parse(savedProgress)));
-
       const savedStarred = localStorage.getItem('dsa-tracker-starred');
       if (savedStarred) setStarredSet(new Set(JSON.parse(savedStarred)));
-
-      // Load Notes
       const savedNotes = localStorage.getItem('dsa-tracker-notes');
       if (savedNotes) setNotes(JSON.parse(savedNotes));
-      
       const savedTheme = localStorage.getItem('dsa-tracker-theme');
       if (savedTheme === 'dark') {
         setDarkMode(true);
         document.documentElement.classList.add('dark');
       }
-    } catch (e) {
-      console.error("Failed to load state", e);
-    }
-    
+    } catch (e) { console.error(e); }
     setIsLoaded(true);
   }, []);
 
-  // Persist State
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem('dsa-tracker-progress', JSON.stringify([...completedSet]));
     localStorage.setItem('dsa-tracker-starred', JSON.stringify([...starredSet]));
-    localStorage.setItem('dsa-tracker-notes', JSON.stringify(notes)); // Save Notes
+    localStorage.setItem('dsa-tracker-notes', JSON.stringify(notes));
   }, [completedSet, starredSet, notes, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem('dsa-tracker-theme', darkMode ? 'dark' : 'light');
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    if (darkMode) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
   }, [darkMode, isLoaded]);
 
-  // Handlers
   const toggleQuestion = (uid) => {
     const newSet = new Set(completedSet);
-    if (newSet.has(uid)) newSet.delete(uid);
-    else newSet.add(uid);
+    if (newSet.has(uid)) newSet.delete(uid); else newSet.add(uid);
     setCompletedSet(newSet);
   };
-
   const toggleStar = (uid) => {
     const newSet = new Set(starredSet);
-    if (newSet.has(uid)) newSet.delete(uid);
-    else newSet.add(uid);
+    if (newSet.has(uid)) newSet.delete(uid); else newSet.add(uid);
     setStarredSet(newSet);
   };
-
-  // New: Save Note Handler
   const saveNote = (uid, content) => {
     setNotes(prev => {
       const updated = { ...prev };
-      if (!content || content.trim() === "") {
-        delete updated[uid]; // Remove empty notes to save space
-      } else {
-        updated[uid] = content;
-      }
+      if (!content || content.trim() === "") delete updated[uid];
+      else updated[uid] = content;
       return updated;
     });
   };
-
   const resetProgress = () => {
-    if (confirm("Are you sure you want to reset all progress, stars, and notes? This cannot be undone.")) {
+    if (confirm("Reset all progress?")) {
       setCompletedSet(new Set());
       setStarredSet(new Set());
       setNotes({});
     }
   };
 
-  // Stats
   const stats = useMemo(() => {
     let total = 0;
     let completed = 0;
@@ -112,20 +90,28 @@ export default function App() {
 
   if (!isLoaded) return null;
 
+  // --- RETURN STATEMENT UPDATES ---
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
       
-      {/* Sticky Header */}
+      {/* HEADER */}
       <header className={`sticky top-0 z-50 backdrop-blur-md border-b ${darkMode ? 'bg-gray-900/80 border-gray-700' : 'bg-white/80 border-gray-200'}`}>
         <div className="max-w-4xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div className="bg-indigo-600 p-2 rounded-lg text-white">
-                <BarChart3 className="w-5 h-5" />
+            
+            {/* LOGO AREA */}
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-lg text-white shadow-lg shadow-indigo-500/20">
+                <BarChart3 className="w-6 h-6" />
               </div>
-              <h1 className="text-xl font-bold tracking-tight">DSA Tracker</h1>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight leading-none">DSA Tracker</h1>
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400">Master the Patterns</p>
+              </div>
             </div>
             
+            {/* CONTROLS */}
             <div className="flex items-center gap-2">
                <button 
                 onClick={() => setDarkMode(!darkMode)}
@@ -143,7 +129,8 @@ export default function App() {
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          {/* PROGRESS BAR */}
+          <div className="flex items-center gap-4 mt-4">
              <div className="flex-grow">
                <div className="flex justify-between text-xs mb-1 font-medium text-gray-500 dark:text-gray-400">
                  <span>Overall Progress</span>
@@ -163,7 +150,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* MAIN CONTENT */}
       <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="space-y-6">
           {data.map(category => (
@@ -172,16 +159,33 @@ export default function App() {
               category={category} 
               completedSet={completedSet}
               starredSet={starredSet}
-              notes={notes} // Pass notes
+              notes={notes}
               toggleQuestion={toggleQuestion}
               toggleStar={toggleStar}
-              onSaveNote={saveNote} // Pass handler
+              onSaveNote={saveNote}
             />
           ))}
         </div>
 
-        <footer className="mt-12 text-center text-sm text-gray-400 pb-8">
-          <p>Complete your patterns to master Data Structures & Algorithms.</p>
+        {/* FOOTER WITH LINKEDIN */}
+        <footer className="mt-12 mb-6 border-t border-gray-100 dark:border-gray-800 pt-8">
+          <div className="flex flex-col items-center justify-center gap-3 text-center">
+            <p className="text-sm text-gray-400">
+              Complete your patterns to master Data Structures & Algorithms.
+            </p>
+            
+            <a 
+              href="https://www.linkedin.com/in/imkks/" /* <--- PUT YOUR LINKEDIN URL HERE */
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm transition-all group"
+            >
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                Created by <span className="font-bold text-gray-700 dark:text-gray-200">Krishna K Singh</span>
+              </span>
+              <Linkedin className="w-4 h-4 text-[#0077b5]" />
+            </a>
+          </div>
         </footer>
       </main>
     </div>
