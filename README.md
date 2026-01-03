@@ -36,19 +36,19 @@ A comprehensive, offline-first React application designed to help you master Dat
    git clone [https://github.com/your-username/dsa-tracker.git](https://github.com/your-username/dsa-tracker.git)
    cd dsa-tracker
    ```
- 2.  **Install dependencies:
+ 2. **Install dependencies:**
 
-``bash
+```bash
 
 npm install
 ```
-3. **Run the development server:
+3. **Run the development server:**
 
 ```Bash
 
 npm run dev
 ```
-4. **Open your browser: Navigate to http://localhost:5173 (or the port shown in your terminal).
+4. **Open your browser: Navigate to http://localhost:5173 (or the port shown in your terminal).**
 
 ## 📂 Project Structure
 ```Plaintext
