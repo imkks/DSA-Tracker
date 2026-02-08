@@ -32,17 +32,18 @@ const PatternSection = ({ pattern, completedSet, starredSet, notes, toggleQuesti
       </div>
       
       {isExpanded && (
-        <div className="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 border-t border-gray-100 dark:border-gray-800">
+        // CHANGED: Removed grid-cols-2 and grid-cols-3 to force line-by-line list view
+        <div className="p-3 grid grid-cols-1 gap-2 border-t border-gray-100 dark:border-gray-800">
             {pattern.questions.map(q => (
             <QuestionItem 
                 key={q.uid} 
                 question={q} 
                 isCompleted={completedSet.has(q.uid)} 
                 isStarred={starredSet.has(q.uid)}
-                note={notes[q.uid]} // Pass specific note
+                note={notes[q.uid]}
                 onToggle={toggleQuestion} 
                 onToggleStar={toggleStar}
-                onSaveNote={onSaveNote} // Pass handler
+                onSaveNote={onSaveNote}
             />
             ))}
         </div>
