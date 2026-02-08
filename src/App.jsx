@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart3, Moon, Sun, Linkedin, Code2 } from 'lucide-react'; // Added Linkedin, Code2
 
 import { RAW_DATA } from './data/dsaData';
+import { DSA_DATA } from './data/processedData';
 import { hydrateData } from './utils/helpers';
 import CategoryAccordion from './components/CategoryAccordion';
 
@@ -10,7 +11,7 @@ export default function App() {
   // For brevity, I am not repeating the state logic here, just the return statement.
   
   // PASTE YOUR EXISTING STATE & USEEFFECT CODE HERE
-  const [data, setData] = useState([]);
+  const [data, setData] = useState(DSA_DATA);
   const [completedSet, setCompletedSet] = useState(new Set());
   const [starredSet, setStarredSet] = useState(new Set());
   const [notes, setNotes] = useState({});
@@ -18,8 +19,8 @@ export default function App() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const processed = hydrateData(RAW_DATA);
-    setData(processed);
+    // const processed = hydrateData(RAW_DATA);
+    // setData(processed);
     try {
       const savedProgress = localStorage.getItem('dsa-tracker-progress');
       if (savedProgress) setCompletedSet(new Set(JSON.parse(savedProgress)));

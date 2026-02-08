@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Circle, ExternalLink, Star, StickyNote, Save, X } from 'lucide-react';
 
 const QuestionItem = ({ question, isCompleted, isStarred, note, onToggle, onToggleStar, onSaveNote }) => {
   const [showNote, setShowNote] = useState(false);
   const [noteText, setNoteText] = useState(note || "");
 
-  // Update local state if the prop changes (e.g. from localStorage load)
-  React.useEffect(() => {
+  useEffect(() => {
     setNoteText(note || "");
   }, [note]);
 
@@ -16,11 +15,20 @@ const QuestionItem = ({ question, isCompleted, isStarred, note, onToggle, onTogg
   };
 
   const handleCancel = () => {
-    setNoteText(note || ""); // Revert to saved version
+    setNoteText(note || ""); 
     setShowNote(false);
   };
 
   const hasNote = note && note.trim().length > 0;
+
+  // Determine Badge Color
+  const getDifficultyColor = (diff) => {
+    switch(diff?.toLowerCase()) {
+      case 'easy': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800';
+      case 'hard': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800';
+      default: return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800'; // Medium
+    }
+  };
 
   return (
     <div className={`flex flex-col rounded-lg border transition-all duration-200 ${
@@ -31,6 +39,7 @@ const QuestionItem = ({ question, isCompleted, isStarred, note, onToggle, onTogg
       
       {/* Question Row */}
       <div className="flex items-center gap-3 p-3">
+        {/* Checkbox */}
         <button 
           onClick={() => onToggle(question.uid)}
           className="flex-shrink-0 focus:outline-none"
@@ -43,38 +52,47 @@ const QuestionItem = ({ question, isCompleted, isStarred, note, onToggle, onTogg
           )}
         </button>
         
+        {/* Title Link */}
         <a 
           href={question.link}
           target="_blank"
           rel="noopener noreferrer"
-          className={`flex-grow text-sm leading-snug hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1 min-w-0 ${
+          className={`flex-grow text-sm leading-snug hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-2 min-w-0 ${
             isCompleted ? 'text-gray-500 dark:text-gray-400 line-through decoration-gray-300' : 'text-gray-700 dark:text-gray-200'
           }`}
         >
           <span className="font-mono text-xs text-gray-400 min-w-[24px] inline-block flex-shrink-0">{question.id}.</span>
-          <span className="truncate">{question.title}</span>
-          <ExternalLink className="w-3 h-3 opacity-0 hover:opacity-100 ml-1 flex-shrink-0" />
+          <span className="truncate font-medium">{question.title}</span>
+          <ExternalLink className="w-3 h-3 opacity-0 hover:opacity-100 flex-shrink-0 text-gray-400" />
         </a>
 
-        {/* Note Button */}
-        <button
-          onClick={() => setShowNote(!showNote)}
-          className={`flex-shrink-0 focus:outline-none transition-colors ${
-            hasNote ? 'text-indigo-500 dark:text-indigo-400' : 'text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400'
-          }`}
-          title="Add/Edit Note"
-        >
-           <StickyNote className="w-4 h-4 fill-current" />
-        </button>
+        {/* Difficulty Badge */}
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${getDifficultyColor(question.difficulty)}`}>
+            {question.difficulty}
+        </span>
 
-        {/* Star Button */}
-        <button
-          onClick={() => onToggleStar(question.uid)}
-          className="flex-shrink-0 focus:outline-none opacity-40 hover:opacity-100 transition-opacity"
-          title={isStarred ? "Remove star" : "Add star for revision"}
-        >
-           <Star className={`w-4 h-4 ${isStarred ? 'fill-yellow-400 text-yellow-400 opacity-100' : 'text-gray-400 dark:text-gray-600'}`} />
-        </button>
+        {/* Actions */}
+        <div className="flex items-center gap-1 border-l pl-2 ml-1 border-gray-100 dark:border-gray-700">
+            <button
+            onClick={() => setShowNote(!showNote)}
+            className={`flex-shrink-0 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition-colors ${
+                hasNote ? 'text-indigo-500 dark:text-indigo-400' : 'text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400'
+            }`}
+            title="Add/Edit Note"
+            >
+            <StickyNote className="w-4 h-4 fill-current" />
+            </button>
+
+            <button
+            onClick={() => onToggleStar(question.uid)}
+            className={`flex-shrink-0 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition-opacity ${
+                isStarred ? 'opacity-100' : 'opacity-40 hover:opacity-100'
+            }`}
+            title={isStarred ? "Remove star" : "Add star for revision"}
+            >
+            <Star className={`w-4 h-4 ${isStarred ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400 dark:text-gray-600'}`} />
+            </button>
+        </div>
       </div>
 
       {/* Note Editor Section */}
