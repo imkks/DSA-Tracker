@@ -1,57 +1,103 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart3, Moon, Sun, Linkedin, Search, Filter, X } from 'lucide-react';
+import { BarChart3, Moon, Sun, Linkedin, Search, Filter, X, Layout, FileText, List } from 'lucide-react';
 
+// Data Sources
 import { DSA_DATA } from './data/processedData';
+import { LAST_MINUTE_RAW, DSA_SHEET_RAW } from './data/extraSheets';
+
+// Components
 import CategoryAccordion from './components/CategoryAccordion';
+import { transformSheet } from './utils/transformData';
+
+// --- TAB CONFIGURATION ---
+const TABS = {
+  patterns: {
+    id: 'patterns',
+    label: 'DSA Patterns',
+    icon: Layout,
+    data: DSA_DATA,
+    storageKey: 'dsa-tracker' 
+  },
+  lastMinute: {
+    id: 'lastMinute',
+    label: 'Last Minute 100',
+    icon: FileText,
+    data: transformSheet(LAST_MINUTE_RAW, 'lm'),
+    storageKey: 'last-minute'
+  },
+  sheet: {
+    id: 'sheet',
+    label: 'DSA Sheet',
+    icon: List,
+    data: transformSheet(DSA_SHEET_RAW, 'sheet'),
+    storageKey: 'dsa-sheet'
+  }
+};
 
 export default function App() {
   // --- STATE ---
-  const [data, setData] = useState(DSA_DATA);
+  const [activeTab, setActiveTab] = useState('patterns');
   
-  // User Progress State
-  const [completedSet, setCompletedSet] = useState(new Set());
-  const [starredSet, setStarredSet] = useState(new Set());
-  const [notes, setNotes] = useState({});
+  // We store ALL user progress in one state object, keyed by tab ID
+  // Structure: { patterns: { completed: Set, starred: Set, notes: {} }, lastMinute: { ... } }
+  const [userData, setUserData] = useState({
+    patterns: { completed: new Set(), starred: new Set(), notes: {} },
+    lastMinute: { completed: new Set(), starred: new Set(), notes: {} },
+    sheet: { completed: new Set(), starred: new Set(), notes: {} }
+  });
   
-  // UI State
   const [darkMode, setDarkMode] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Search & Filter State
+  // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
-  const [difficultyFilter, setDifficultyFilter] = useState("All"); // All, Easy, Medium, Hard
-  const [statusFilter, setStatusFilter] = useState("All");         // All, Completed, Incomplete, Starred
+  const [difficultyFilter, setDifficultyFilter] = useState("All"); 
+  const [statusFilter, setStatusFilter] = useState("All");
 
-  // --- INITIALIZATION (Load from LocalStorage) ---
+  // --- INITIALIZATION ---
   useEffect(() => {
-    try {
-      const savedProgress = localStorage.getItem('dsa-tracker-progress');
-      if (savedProgress) setCompletedSet(new Set(JSON.parse(savedProgress)));
+    const newUserData = { ...userData };
 
-      const savedStarred = localStorage.getItem('dsa-tracker-starred');
-      if (savedStarred) setStarredSet(new Set(JSON.parse(savedStarred)));
+    // Load data for EACH tab from its own local storage key
+    Object.values(TABS).forEach(tab => {
+      try {
+        const savedProgress = localStorage.getItem(`${tab.storageKey}-progress`);
+        const savedStarred = localStorage.getItem(`${tab.storageKey}-starred`);
+        const savedNotes = localStorage.getItem(`${tab.storageKey}-notes`);
 
-      const savedNotes = localStorage.getItem('dsa-tracker-notes');
-      if (savedNotes) setNotes(JSON.parse(savedNotes));
-      
-      const savedTheme = localStorage.getItem('dsa-tracker-theme');
-      if (savedTheme === 'dark') {
-        setDarkMode(true);
-        document.documentElement.classList.add('dark');
+        if (savedProgress) newUserData[tab.id].completed = new Set(JSON.parse(savedProgress));
+        if (savedStarred) newUserData[tab.id].starred = new Set(JSON.parse(savedStarred));
+        if (savedNotes) newUserData[tab.id].notes = JSON.parse(savedNotes);
+      } catch (e) {
+        console.error(`Failed to load data for ${tab.id}`, e);
       }
-    } catch (e) {
-      console.error("Failed to load state", e);
+    });
+
+    setUserData(newUserData);
+
+    // Theme
+    const savedTheme = localStorage.getItem('dsa-tracker-theme');
+    if (savedTheme === 'dark') {
+      setDarkMode(true);
+      document.documentElement.classList.add('dark');
     }
+    
     setIsLoaded(true);
   }, []);
 
   // --- PERSISTENCE ---
+  // Whenever userData changes, save the *active* tab's data to LS
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem('dsa-tracker-progress', JSON.stringify([...completedSet]));
-    localStorage.setItem('dsa-tracker-starred', JSON.stringify([...starredSet]));
-    localStorage.setItem('dsa-tracker-notes', JSON.stringify(notes));
-  }, [completedSet, starredSet, notes, isLoaded]);
+    
+    const current = userData[activeTab];
+    const key = TABS[activeTab].storageKey;
+
+    localStorage.setItem(`${key}-progress`, JSON.stringify([...current.completed]));
+    localStorage.setItem(`${key}-starred`, JSON.stringify([...current.starred]));
+    localStorage.setItem(`${key}-notes`, JSON.stringify(current.notes));
+    
+  }, [userData, activeTab, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -60,22 +106,41 @@ export default function App() {
     else document.documentElement.classList.remove('dark');
   }, [darkMode, isLoaded]);
 
-  // --- HANDLERS ---
+  // --- ACTIONS ---
+  // Helper to update state for the current tab
+  const updateCurrentTab = (field, updateFn) => {
+    setUserData(prev => {
+      const currentTabState = prev[activeTab];
+      const newVal = updateFn(currentTabState[field]);
+      return {
+        ...prev,
+        [activeTab]: {
+          ...currentTabState,
+          [field]: newVal
+        }
+      };
+    });
+  };
+
   const toggleQuestion = (uid) => {
-    const newSet = new Set(completedSet);
-    if (newSet.has(uid)) newSet.delete(uid); else newSet.add(uid);
-    setCompletedSet(newSet);
+    updateCurrentTab('completed', (set) => {
+      const newSet = new Set(set);
+      if (newSet.has(uid)) newSet.delete(uid); else newSet.add(uid);
+      return newSet;
+    });
   };
 
   const toggleStar = (uid) => {
-    const newSet = new Set(starredSet);
-    if (newSet.has(uid)) newSet.delete(uid); else newSet.add(uid);
-    setStarredSet(newSet);
+    updateCurrentTab('starred', (set) => {
+      const newSet = new Set(set);
+      if (newSet.has(uid)) newSet.delete(uid); else newSet.add(uid);
+      return newSet;
+    });
   };
 
   const saveNote = (uid, content) => {
-    setNotes(prev => {
-      const updated = { ...prev };
+    updateCurrentTab('notes', (notes) => {
+      const updated = { ...notes };
       if (!content || content.trim() === "") delete updated[uid];
       else updated[uid] = content;
       return updated;
@@ -83,86 +148,71 @@ export default function App() {
   };
 
   const resetProgress = () => {
-    if (confirm("Are you sure you want to reset all progress, stars, and notes?")) {
-      setCompletedSet(new Set());
-      setStarredSet(new Set());
-      setNotes({});
+    if (confirm("Reset progress for THIS tab?")) {
+      setUserData(prev => ({
+        ...prev,
+        [activeTab]: { completed: new Set(), starred: new Set(), notes: {} }
+      }));
     }
   };
 
-  // --- FILTERING LOGIC ---
+  // --- DERIVED DATA (Current View) ---
+  const currentTabData = TABS[activeTab].data;
+  const { completed: currentCompleted, starred: currentStarred, notes: currentNotes } = userData[activeTab];
+
+  // Filtering
   const filteredData = useMemo(() => {
-    // If no filters are active, return original data
     if (!searchQuery && difficultyFilter === "All" && statusFilter === "All") {
-      return data;
+      return currentTabData;
     }
 
     const lowerQuery = searchQuery.toLowerCase();
 
-    return data.map(category => {
-      // 1. Filter Patterns inside Category
+    return currentTabData.map(category => {
       const filteredPatterns = category.patterns.map(pattern => {
-        // 2. Filter Questions inside Pattern
         const filteredQuestions = pattern.questions.filter(q => {
-          // A. Search Match
-          const matchesSearch = 
-            q.title.toLowerCase().includes(lowerQuery) || 
-            q.id.toString().includes(lowerQuery);
-
-          // B. Difficulty Match
-          const matchesDifficulty = 
-            difficultyFilter === "All" || 
-            q.difficulty === difficultyFilter;
-
-          // C. Status Match
+          const matchesSearch = q.title.toLowerCase().includes(lowerQuery);
+          const matchesDifficulty = difficultyFilter === "All" || q.difficulty === difficultyFilter;
           let matchesStatus = true;
-          if (statusFilter === "Completed") matchesStatus = completedSet.has(q.uid);
-          else if (statusFilter === "Incomplete") matchesStatus = !completedSet.has(q.uid);
-          else if (statusFilter === "Starred") matchesStatus = starredSet.has(q.uid);
+          if (statusFilter === "Completed") matchesStatus = currentCompleted.has(q.uid);
+          else if (statusFilter === "Incomplete") matchesStatus = !currentCompleted.has(q.uid);
+          else if (statusFilter === "Starred") matchesStatus = currentStarred.has(q.uid);
 
           return matchesSearch && matchesDifficulty && matchesStatus;
         });
 
-        // Return pattern with filtered questions (or null if empty)
-        if (filteredQuestions.length > 0) {
-          return { ...pattern, questions: filteredQuestions };
-        }
+        if (filteredQuestions.length > 0) return { ...pattern, questions: filteredQuestions };
         return null;
-      }).filter(Boolean); // Remove null patterns
+      }).filter(Boolean);
 
-      // Return category with filtered patterns (or null if empty)
-      if (filteredPatterns.length > 0) {
-        return { ...category, patterns: filteredPatterns };
-      }
+      if (filteredPatterns.length > 0) return { ...category, patterns: filteredPatterns };
       return null;
-    }).filter(Boolean); // Remove null categories
+    }).filter(Boolean);
 
-  }, [data, searchQuery, difficultyFilter, statusFilter, completedSet, starredSet]);
+  }, [currentTabData, searchQuery, difficultyFilter, statusFilter, currentCompleted, currentStarred]);
 
-  // --- STATS CALCULATION (Based on ALL data, not filtered) ---
+  // Stats
   const stats = useMemo(() => {
     let total = 0;
-    let completed = 0;
-    data.forEach(cat => {
+    let completedCount = 0;
+    currentTabData.forEach(cat => {
       cat.patterns.forEach(pat => {
         total += pat.questions.length;
-        completed += pat.questions.filter(q => completedSet.has(q.uid)).length;
+        completedCount += pat.questions.filter(q => currentCompleted.has(q.uid)).length;
       });
     });
-    return { total, completed, percent: total === 0 ? 0 : Math.round((completed / total) * 100) };
-  }, [data, completedSet]);
+    return { total, completed: completedCount, percent: total === 0 ? 0 : Math.round((completedCount / total) * 100) };
+  }, [currentTabData, currentCompleted]);
 
   if (!isLoaded) return null;
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
       
-      {/* --- HEADER --- */}
+      {/* HEADER */}
       <header className={`sticky top-0 z-50 backdrop-blur-md border-b ${darkMode ? 'bg-gray-900/80 border-gray-700' : 'bg-white/80 border-gray-200'}`}>
         <div className="max-w-4xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-2">
-            
-            {/* Logo */}
             <div className="flex items-center gap-3">
               <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-lg text-white shadow-lg shadow-indigo-500/20">
                 <BarChart3 className="w-6 h-6" />
@@ -173,36 +223,47 @@ export default function App() {
               </div>
             </div>
             
-            {/* Right Controls */}
             <div className="flex items-center gap-2">
-               <button 
-                onClick={() => setDarkMode(!darkMode)}
-                className={`p-2 rounded-md transition-colors ${darkMode ? 'hover:bg-gray-800 text-yellow-400' : 'hover:bg-gray-100 text-gray-600'}`}
-                title="Toggle Theme"
-              >
+               <button onClick={() => setDarkMode(!darkMode)} className={`p-2 rounded-md transition-colors ${darkMode ? 'hover:bg-gray-800 text-yellow-400' : 'hover:bg-gray-100 text-gray-600'}`}>
                 {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
-              <button 
-                onClick={resetProgress}
-                className="text-xs font-medium text-red-500 hover:text-red-600 px-3 py-1.5 rounded-md border border-red-200 hover:bg-red-50 dark:border-red-900/30 dark:hover:bg-red-900/20 transition-colors"
-              >
-                Reset
+              <button onClick={resetProgress} className="text-xs font-medium text-red-500 hover:text-red-600 px-3 py-1.5 rounded-md border border-red-200 hover:bg-red-50 dark:border-red-900/30 dark:hover:bg-red-900/20 transition-colors">
+                Reset Tab
               </button>
             </div>
           </div>
+
+          {/* TAB BAR */}
+          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg mb-4 overflow-x-auto">
+            {Object.values(TABS).map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 flex-1 justify-center px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    isActive 
+                      ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="whitespace-nowrap">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
           
-          {/* Progress Bar */}
-          <div className="flex items-center gap-4 mt-4">
+          {/* PROGRESS */}
+          <div className="flex items-center gap-4">
              <div className="flex-grow">
                <div className="flex justify-between text-xs mb-1 font-medium text-gray-500 dark:text-gray-400">
-                 <span>Overall Progress</span>
+                 <span>{TABS[activeTab].label} Progress</span>
                  <span className={stats.percent === 100 ? 'text-green-500' : ''}>{stats.completed} / {stats.total} Solved</span>
                </div>
                <div className="h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                 <div 
-                    className="h-full bg-indigo-600 transition-all duration-700 ease-out" 
-                    style={{ width: `${stats.percent}%` }}
-                 />
+                 <div className="h-full bg-indigo-600 transition-all duration-700 ease-out" style={{ width: `${stats.percent}%` }} />
                </div>
              </div>
              <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 min-w-[3rem] text-right">
@@ -212,76 +273,50 @@ export default function App() {
         </div>
       </header>
 
-      {/* --- MAIN CONTENT --- */}
+      {/* MAIN CONTENT */}
       <main className="max-w-4xl mx-auto px-4 py-8">
         
-        {/* SEARCH & FILTERS TOOLBAR */}
+        {/* FILTERS */}
         <div className="mb-8 space-y-4 sm:space-y-0 sm:flex sm:items-center sm:gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-          
-          {/* Search Input */}
           <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input 
-              type="text" 
-              placeholder="Search questions..." 
-              value={searchQuery}
+              type="text" placeholder="Search questions..." value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              >
+              <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                 <X className="w-3 h-3" />
               </button>
             )}
           </div>
-
-          {/* Filter Dropdowns */}
-          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-            {/* Status Filter */}
-            <div className="relative min-w-[130px]">
-              <select 
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full appearance-none pl-3 pr-8 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-              >
-                <option value="All">All Status</option>
-                <option value="Completed">Completed</option>
-                <option value="Incomplete">Incomplete</option>
-                <option value="Starred">Starred ⭐</option>
-              </select>
-              <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-            </div>
-
-            {/* Difficulty Filter */}
-            <div className="relative min-w-[130px]">
-              <select 
-                value={difficultyFilter}
-                onChange={(e) => setDifficultyFilter(e.target.value)}
-                className="w-full appearance-none pl-3 pr-8 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-              >
-                <option value="All">All Levels</option>
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-              </select>
-              <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-            </div>
+          <div className="flex gap-2">
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="appearance-none pl-3 pr-8 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm">
+              <option value="All">All Status</option>
+              <option value="Completed">Completed</option>
+              <option value="Incomplete">Incomplete</option>
+              <option value="Starred">Starred</option>
+            </select>
+            <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)} className="appearance-none pl-3 pr-8 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm">
+              <option value="All">All Levels</option>
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
           </div>
         </div>
 
-        {/* QUESTIONS LIST */}
+        {/* LIST */}
         <div className="space-y-6">
           {filteredData.length > 0 ? (
             filteredData.map(category => (
               <CategoryAccordion 
                 key={category.id} 
                 category={category} 
-                completedSet={completedSet}
-                starredSet={starredSet}
-                notes={notes}
+                completedSet={currentCompleted}
+                starredSet={currentStarred}
+                notes={currentNotes}
                 toggleQuestion={toggleQuestion}
                 toggleStar={toggleStar}
                 onSaveNote={saveNote}
@@ -290,7 +325,6 @@ export default function App() {
           ) : (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <p className="text-lg font-medium">No questions found</p>
-              <p className="text-sm mt-1">Try adjusting your search or filters</p>
             </div>
           )}
         </div>
@@ -301,13 +335,7 @@ export default function App() {
             <p className="text-sm text-gray-400">
               Complete your patterns to master Data Structures & Algorithms.
             </p>
-            
-            <a 
-              href="https://www.linkedin.com/in/YOUR_USERNAME_HERE/"
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm transition-all group"
-            >
+            <a href="https://www.linkedin.com/in/YOUR_USERNAME_HERE/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm transition-all group">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                 Created by <span className="font-bold text-gray-700 dark:text-gray-200">[Your Name]</span>
               </span>
@@ -319,8 +347,3 @@ export default function App() {
     </div>
   );
 }
-
-// Simple Helper for the Dropdown Icon
-const ChevronDownIcon = ({ className }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-);
