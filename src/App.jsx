@@ -13,7 +13,7 @@ import { transformSheet } from './utils/transformData';
 const TABS = {
   patterns: {
     id: 'patterns',
-    label: 'DSA Patterns',
+    label: 'Full',
     icon: Layout,
     data: DSA_DATA,
     storageKey: 'dsa-tracker' 
@@ -27,7 +27,7 @@ const TABS = {
   },
   sheet: {
     id: 'sheet',
-    label: 'DSA Sheet',
+    label: 'Combined',
     icon: List,
     data: transformSheet(DSA_SHEET_RAW, 'sheet'),
     storageKey: 'dsa-sheet'
